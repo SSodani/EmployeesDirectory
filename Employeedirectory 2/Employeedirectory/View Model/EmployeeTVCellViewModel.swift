@@ -37,6 +37,15 @@ extension EmployeeTVCellViewModel {
     }
     
     
+    func call() {
+        print("call \(self.employeeData?.full_name ?? "") @ \(self.employeeData?.phone_number ?? " ") ")
+    }
+    
+    func email() {
+        print("email \(self.employeeData?.full_name ?? "") @ \(self.employeeData?.email_address ?? " ") ")
+    }
+    
+    
     //check image in the cache and if not available then load from the URL
     func getImage(url:String,imageType:String,completion: @escaping (UIImage) -> ())  {
         

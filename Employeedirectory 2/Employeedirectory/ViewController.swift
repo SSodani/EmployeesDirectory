@@ -38,6 +38,8 @@ class ViewController: UIViewController {
             }
         }
     }
+    
+    let gradientLayer = CAGradientLayer()
 
     
     
@@ -49,6 +51,8 @@ class ViewController: UIViewController {
         title = "Employee List"
 //        navigationController?.navigationBar.prefersLargeTitles = true
 //        navigationController?.navigationItem.largeTitleDisplayMode = .always
+        
+        self.employeeTableView.backgroundView?.layer.addSublayer(gradientLayer)
         
         refreshControlTV.addTarget(self, action: #selector(refreshData(_:)), for: .valueChanged)
         
@@ -67,6 +71,13 @@ class ViewController: UIViewController {
         super.viewDidLayoutSubviews()
         employeeTableView.frame = self.view.bounds
         activityIndicator.frame =  CGRect(x: (view.frame.size.width - 70)/2, y: (view.frame.size.height - 70)/2, width: 70, height: 70)
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        let topColor = CGColor(red: 95.0/255.0, green: 165.0/255/0, blue: 1.0, alpha: 1.0)
+        let bottomColor = CGColor(red: 72.0/255.0, green: 114.0/255.0, blue: 184.0/255.0, alpha: 1.0)
+        gradientLayer.frame = employeeTableView.bounds
+        gradientLayer.colors = [topColor,bottomColor]
     }
     
    
@@ -102,6 +113,8 @@ extension ViewController:UITableViewDelegate,UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
+        self.viewModel?.sortEmployeesByName()
+        
         guard let employeeDataArray = self.viewModel?.getEmployees(),
               employeeDataArray.count > 0 else {
                   tableView.setEmptyView(title: "No Employees in the directory")
@@ -123,7 +136,15 @@ extension ViewController:UITableViewDelegate,UITableViewDataSource {
     
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 100
+        return 120
+    }
+    
+    //move navigation bar as scrolls to top of tableView
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let defaultOffSet = self.view.safeAreaInsets.top
+        let offset = scrollView.contentOffset.y + defaultOffSet
+        
+        navigationController?.navigationBar.transform = CGAffineTransform.init(translationX: 0, y: min(0, -offset))
     }
 }
 
