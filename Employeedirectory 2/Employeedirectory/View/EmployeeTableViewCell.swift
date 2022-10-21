@@ -11,6 +11,8 @@ class EmployeeTableViewCell: UITableViewCell {
     
     //MARK: - Variables
     
+    static let identifier = "EmployeeTableViewCell"
+    
     var employeeTVCellVM:EmployeeTVCellViewModel? {
         didSet {
             DispatchQueue.main.async {
@@ -20,71 +22,79 @@ class EmployeeTableViewCell: UITableViewCell {
             }
         }
     }
-    
-    private let employeeImageView : UIImageView = {
+        
+     private let employeeImageView : UIImageView = {
         let imgView = UIImageView()
-        imgView.contentMode = .scaleAspectFit
+        imgView.contentMode = .scaleAspectFill
         imgView.clipsToBounds = true
+        imgView.translatesAutoresizingMaskIntoConstraints = false
         return imgView
     }()
     
-    private let nameLabel : UILabel = {
+     private let nameLabel : UILabel = {
         let label = UILabel()
-        label.textColor = .black
         label.font = UIFont.boldSystemFont(ofSize: 16)
         label.textAlignment = .left
+         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
     
-    private let teamLabel : UILabel = {
+     private let teamLabel : UILabel = {
         let label = UILabel()
-        label.textColor = .black
         label.font = UIFont.systemFont(ofSize: 12)
         label.textAlignment = .left
+         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
     
     //MARK: - INITIALIZATION METHODS
     
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        // Initialization code
-    }
-    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-        addSubview(employeeImageView)
-        addSubview(nameLabel)
-        addSubview(teamLabel)
+        contentView.addSubview(employeeImageView)
+        contentView.addSubview(nameLabel)
+        contentView.addSubview(teamLabel)
         
-        employeeImageView.anchor(top: topAnchor, left: leftAnchor, bottom: bottomAnchor, right: nil, paddingTop: 5, paddingLeft: 5, paddingBottom: 5, paddingRight: 0, width: 90, height: 0, enableInsets: false)
-        nameLabel.anchor(top: topAnchor, left: employeeImageView.rightAnchor, bottom: nil, right: nil, paddingTop: 20, paddingLeft: 10, paddingBottom: 0, paddingRight: 0, width: frame.size.width / 2, height: 0, enableInsets: false)
-        teamLabel.anchor(top: nameLabel.bottomAnchor, left: employeeImageView.rightAnchor, bottom: nil, right: nil, paddingTop: 0, paddingLeft: 10, paddingBottom: 0, paddingRight: 0, width: frame.size.width / 2, height: 0, enableInsets: false)
+        self.applyConstraints()
+    }
+    
+    func applyConstraints() {
+        let employeeImageViewConstraints = [employeeImageView.leadingAnchor.constraint(equalTo: self.contentView.leadingAnchor),
+                                            employeeImageView.topAnchor.constraint(equalTo: self.contentView.topAnchor,constant: 15),
+                                            employeeImageView.bottomAnchor.constraint(equalTo: self.contentView.bottomAnchor,constant: -15),
+                                            employeeImageView.widthAnchor.constraint(equalToConstant: 100)]
         
+        let nameLabelConstraints = [nameLabel.leadingAnchor.constraint(equalTo: self.employeeImageView.trailingAnchor, constant: 20),
+                                    nameLabel.trailingAnchor.constraint(equalTo: self.contentView.trailingAnchor, constant: -10),
+                                    nameLabel.topAnchor.constraint(equalTo: self.contentView.topAnchor, constant: 20)]
+        
+        let teamLabelConstraints = [teamLabel.leadingAnchor.constraint(equalTo: self.employeeImageView.trailingAnchor, constant: 20),
+                                    teamLabel.trailingAnchor.constraint(equalTo: self.contentView.trailingAnchor, constant: -10),
+                                    teamLabel.topAnchor.constraint(equalTo: self.nameLabel.bottomAnchor, constant: -20),
+                                    teamLabel.bottomAnchor.constraint(equalTo: self.contentView.bottomAnchor, constant: -20)]
+        
+        
+        NSLayoutConstraint.activate(employeeImageViewConstraints)
+        NSLayoutConstraint.activate(nameLabelConstraints)
+        NSLayoutConstraint.activate(teamLabelConstraints)
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
+    
     override func setSelected(_ selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
-        
-        // Configure the view for the selected state
     }
     
     //MARK: - POPULATE IMAGE
     
     func loadandShowImage() {
-        employeeTVCellVM?.getImage(completion: {[weak self] image in
+        employeeTVCellVM?.getSmallImage(completion: {[weak self] image in
             DispatchQueue.main.async {
                 self?.employeeImageView.image = image
             }
-            
         })
     }
-    
-    
-    
-    
 }

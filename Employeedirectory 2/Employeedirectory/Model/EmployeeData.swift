@@ -16,7 +16,7 @@ enum EmployeeType:String,Codable {
 }
 
 struct EmployeeDirectory:Codable {
-    var employees:[EmployeeData]?
+    var employees:[EmployeeData]
 }
 
 struct EmployeeData:Codable {
