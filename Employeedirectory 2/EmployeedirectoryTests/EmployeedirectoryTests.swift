@@ -19,19 +19,18 @@ class EmployeedirectoryTests: XCTestCase {
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
         try super.setUpWithError()
-        sut = EmployeeViewModel(withProtocol: NetworkService())
-        sut.employees = [employee1, employee2]
+        sut = EmployeeViewModel.init(with: [employee1, employee2])
     }
     
     func testSortingByName() {
         
         sut.sortEmployeesByName()
-        XCTAssertEqual(sut.employees?.first?.full_name, "Camille Rogers", "Sorting by name giving correct order")
+        XCTAssertEqual(sut.getEmployees()?.first?.full_name, "Camille Rogers", "Sorting by name giving correct order")
     }
     
     func testSortingByTeam() {
         sut.sortEmployeesByTeam()
-        XCTAssertEqual(sut.employees?.first?.team, "Point of Sale", "Sorting by team giving correct order")
+        XCTAssertEqual(sut.getEmployees()?.first?.team, "Point of Sale", "Sorting by team giving correct order")
     }
     
     func testDataForCellDisplay() {
@@ -47,7 +46,8 @@ class EmployeedirectoryTests: XCTestCase {
         
         XCTAssertEqual(employeeTVCellViewModel1?.team(), "Public Web & Marketing", "Giving correct team as list is sorted by team")
         
-        employeeTVCellViewModel1?.getImage(completion: { image in
+       
+        employeeTVCellViewModel1?.getSmallImage(completion: { image in
             XCTAssertEqual(image, UIImage(named: "placeHolder-employee"), "Place holder as no photo url present")
         })
         
