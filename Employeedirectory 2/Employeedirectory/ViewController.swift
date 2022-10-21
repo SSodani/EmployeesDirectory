@@ -84,7 +84,7 @@ class ViewController: UIViewController {
 
     func fetchEmployeeData() {
         self.activityIndicator.startAnimating()
-        NetworkService.shared.getEmployeeData {[weak self] result in
+        NetworkService.shared.getEmployeeData(url: "https://s3.amazonaws.com/sq-mobile-interview/employees.json") {[weak self] result in
             switch result {
             case .failure(let error):
                 print(error.localizedDescription)

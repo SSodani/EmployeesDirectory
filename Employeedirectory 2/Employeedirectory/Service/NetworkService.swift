@@ -57,8 +57,8 @@ class NetworkService {
     }
     
     
-    func getEmployeeData(completion: @escaping (Result<[EmployeeData], NetworkError>) -> ()) {
-        self.loadData(of: EmployeeDirectory.self, url: "https://s3.amazonaws.com/sq-mobile-interview/employees.json") { result in
+    func getEmployeeData(url:String,completion: @escaping (Result<[EmployeeData], NetworkError>) -> ()) {
+        self.loadData(of: EmployeeDirectory.self, url: url) { result in
             switch result {
             case .failure(let error):
                 completion(.failure(error))
