@@ -12,64 +12,41 @@ class EmployeeViewModel {
     
     //MARK: - VARIABLES AND INITIALIZATION
     
-    private var employeeDataService:EmployeeDataProtocol?
+    private var employeeDataArray:[EmployeeData]?
     
-    private var employeeDirectory:EmployeeDirectory? {
-        didSet {
-            self.reloadData?()
-        }
-    }
-    
-    var employees:[EmployeeData]?
-    
-    var reloadData : (() -> Void)?
-    
-    
-    init(withProtocol employeeDataService:EmployeeDataProtocol = NetworkService()) {
-        self.employeeDataService = employeeDataService
+    init(with employeesData:[EmployeeData]) {
+        employeeDataArray = employeesData
     }
     
     
     //MARK: - FETCHING AND HANDELING DATA
     
-    //fetch employee details
-    func fetchEmployeeData(url:String) {
-        self.employeeDataService?.getEmployeeData(url:url, completion: {[weak self] result  in
-            switch result {
-            case .failure(let networkError):
-                print(networkError)
-            case .success(let employees):
-                self?.employeeDirectory = employees
-                self?.employees = self?.employeeDirectory?.employees
-            }
-        })
-    }
-    
-    
     func sortEmployeesByName() {
-        self.employees =  self.employees?.sorted {
+        self.employeeDataArray =  self.employeeDataArray?.sorted {
                 $0.full_name < $1.full_name
             }
     }
     
     func sortEmployeesByTeam() {
-        self.employees =  self.employees?.sorted {
+        self.employeeDataArray =  self.employeeDataArray?.sorted {
                 $0.team < $1.team
             }
     }
     
     //returns array of employee details
     func getEmployees() -> [EmployeeData]? {
-        return self.employees
+        return self.employeeDataArray
     }
-    
+}
+
+
+extension EmployeeViewModel {
     
     //return an employee details view model for cell to populate the EmployeeTableViewCell
     func getEmployeeData(at indexPath:IndexPath) -> EmployeeTVCellViewModel? {
-        if(self.employees?.count ?? 0 > indexPath.row) {
-        let employeeData = self.employees![indexPath.row]
+        
+        guard let employeeData = self.employeeDataArray?[indexPath.row] else { return nil}
+        
             return (EmployeeTVCellViewModel(employeeData: employeeData))
-        }
-        return nil
     }
 }
