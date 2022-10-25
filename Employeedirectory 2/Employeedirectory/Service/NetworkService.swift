@@ -15,20 +15,13 @@ enum NetworkError:Error {
     case decodingError(Error)
 }
 
-protocol EmployeeDataProtocol {
-    func getEmployeeData(url:String,completion: @escaping (Result<EmployeeDirectory,NetworkError>) -> ())
-}
-
-protocol DownloadImageProtocol {
-    func loadImage(url:URL, for userId:String, completion: @escaping (Result<Data,NetworkError>) -> ())
-    func download(url:URL, toFile file:URL, completion:@escaping (NetworkError?) -> ())
-}
 
 class NetworkService {
     
+    static let shared = NetworkService()
+    
     //load data using the given URL string
      func loadData<T:Decodable>(of type: T.Type = T.self, url:String,completion:@escaping (Result<T,NetworkError>) -> ()) {
-        
         
         guard let url = URL(string: url) else {
             completion(Result.failure(.inValidURL))
@@ -62,95 +55,48 @@ class NetworkService {
             }
         }.resume()
     }
-}
-
-
-//MARK: - EmployeeDataProtocol
-
-extension NetworkService:EmployeeDataProtocol {
-    func getEmployeeData(url:String,completion: @escaping (Result<EmployeeDirectory, NetworkError>) -> ()) {
-        self.loadData(of: EmployeeDirectory.self, url: url) { Result in
-            completion(Result)
+    
+    
+    func getEmployeeData(url:String,completion: @escaping (Result<[EmployeeData], NetworkError>) -> ()) {
+        self.loadData(of: EmployeeDirectory.self, url: url) { result in
+            switch result {
+            case .failure(let error):
+                completion(.failure(error))
+            case .success(let employeeDirectory):
+                completion(.success(employeeDirectory.employees))
+            }
         }
     }
-}
 
-//MARK: - DownloadImageProtocol
 
-extension NetworkService:DownloadImageProtocol {
+//download the image and store in the file manager/cache
+func download(url:URL, completion:@escaping (URL?,NetworkError?) -> ()) {
     
-    //this function  process the data to get image from it and stores the image in cache
-    func loadImage(url: URL, for userId: String, completion: @escaping (Result<Data,NetworkError>) -> ()) {
+    URLSession.shared.downloadTask(with: url) { (tempURL, response, error) in
         
-        //get the cached file for the employee based on the UUID
-        let cachedFile = FileManager.default.temporaryDirectory
-            .appendingPathComponent(
-                userId,
-                isDirectory: false
-            )
-        
-        //if cached file has the image then fetch that image
-        if let data = try? Data(contentsOf: cachedFile) {
-            completion(.success(data))
+        if let error = error {
+            completion(nil,.transportError(error))
             return
         }
         
-        //not present in the cache. Need to load the image
-        self.download(url: url, toFile: cachedFile) { error in
-            
-            if let error = error {
-                print(error)
-                completion(.failure(.transportError(error)))
-            }
-            
-            do {
-                let data = try Data(contentsOf: cachedFile)
-                completion(.success(data))
-                return
-            }
-            catch(let error) {
-                completion(.failure(.decodingError(error)))
-            }
-            
+        if let httpResponse = response as? HTTPURLResponse, !(200...209).contains(httpResponse.statusCode) {
+            completion(nil,.serverError(statusCode: httpResponse.statusCode))
+            return
         }
-    }
-    
-    //download the image and store in the file manager/cache
-    func download(url:URL, toFile file:URL, completion:@escaping (NetworkError?) -> ()) {
         
-        URLSession.shared.downloadTask(with: url) { (tempURL, response, error) in
-            
-            if let error = error {
-                completion(.transportError(error))
-                return
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse, !(200...209).contains(httpResponse.statusCode) {
-                completion(.serverError(statusCode: httpResponse.statusCode))
-                return
-            }
-            
-            guard let tempURL = tempURL else {
-                completion(.noData)
-                return
-            }
-            
-            if FileManager.default.fileExists(atPath: file.path) {
-                try? FileManager.default.removeItem(at: file)
-            }
-            
-            do {
-                try FileManager.default.copyItem(at: tempURL, to: file)
-                completion(nil)
+        guard let tempURL = tempURL else {
+            completion(nil,.noData)
+            return
+        }
+        
+        completion(tempURL,nil)
                 
-            } catch(let error) {
-                completion(.decodingError(error))
-                return
-            }
-            
-        }.resume()
-    }
+    }.resume()
 }
+}
+
+
+
 
 
 

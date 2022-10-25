@@ -76,8 +76,24 @@ extension UITableView {
     }
     
     func restore() {
+//        let gradientLayer = CAGradientLayer()
+//        gradientLayer.locations = [0.0,1.0]
+//        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+//        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+//        let topColor = CGColor(red: 95.0/255.0, green: 165.0/255/0, blue: 1.0, alpha: 1.0)
+//        let bottomColor = CGColor(red: 72.0/255.0, green: 114.0/255.0, blue: 184.0/255.0, alpha: 1.0)
+//        gradientLayer.frame = self.bounds
+//        //constant is for navigationbar. should be setting layer frame in viewcontroller to avoid hard coded value
+//        gradientLayer.frame.origin.y += safeAreaInsets.bottom + 50
+//        gradientLayer.colors = [topColor,bottomColor]
+//        let backgroundView = UIView(frame: self.bounds)
+//        backgroundView.layer.insertSublayer(gradientLayer, at: 0)
+//        self.backgroundView = backgroundView
+//        self.separatorStyle = .singleLine
+//        self.backgroundColor = .clear
         self.backgroundView = nil
         self.separatorStyle = .singleLine
+        self.backgroundColor = .clear
     }
     
 }

@@ -10,76 +10,84 @@ import NVActivityIndicatorView
 
 class ViewController: UIViewController {
     
-    let tableView = UITableView()
+    let employeeTableView: UITableView = {
+        let tableView = UITableView(frame: .zero, style: .plain)
+        tableView.register(EmployeeTableViewCell.self, forCellReuseIdentifier: EmployeeTableViewCell.identifier)
+        return tableView
+    }()
     
-    var viewModel:EmployeeViewModel = EmployeeViewModel(withProtocol: NetworkService())
+    let activityIndicator:NVActivityIndicatorView = {
+        let indicator = NVActivityIndicatorView(frame: .zero, type: .lineScale, color: .white, padding: 20.0)
+        indicator.backgroundColor = .black
+        return indicator
+    }()
     
-    let reuseIdentifierCell = "employeeTableViewCell"
+    private let refreshControlTV: UIRefreshControl = {
+        let refreshControl = UIRefreshControl()
+        refreshControl.attributedTitle = NSAttributedString(string: "Refreshing Data...")
+        return refreshControl
+    }()
     
-    private let refreshControlTV = UIRefreshControl()
     
-    var activityIndicator:NVActivityIndicatorView!
+    var viewModel:EmployeeViewModel? {
+        didSet {
+            DispatchQueue.main.async {[weak self] in
+                self?.activityIndicator.stopAnimating()
+                self?.employeeTableView.refreshControl?.endRefreshing()
+                self?.employeeTableView.reloadData()
+            }
+        }
+    }
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-//        self.navigationItem.title = "Employee Directory"
-//        self.navigationController?.navigationBar.titleTextAttributes
-//        self.navigationController?.navigationBar.backgroundColor = .black
-        let indicatorSize:CGFloat = 70
-        let indicatorFrame = CGRect(x: (view.frame.size.width - indicatorSize)/2, y: (view.frame.size.height - indicatorSize)/2, width: indicatorSize, height: indicatorSize)
-        activityIndicator = NVActivityIndicatorView(frame: indicatorFrame, type: .lineScale, color: .white, padding: 20.0)
-        activityIndicator.backgroundColor = .black
+        view.backgroundColor = .systemBackground
+        title = "Employee List"
+//        navigationController?.navigationBar.prefersLargeTitles = true
+//        navigationController?.navigationItem.largeTitleDisplayMode = .always
+        
+        refreshControlTV.addTarget(self, action: #selector(refreshData(_:)), for: .valueChanged)
+        
+        view.addSubview(self.employeeTableView)
+        employeeTableView.delegate = self
+        employeeTableView.dataSource = self
+        employeeTableView.refreshControl = refreshControlTV
+        
         view.addSubview(activityIndicator)
         
-        //load employee data from the server
+        self.fetchEmployeeData()
+    }
+    
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        employeeTableView.frame = self.view.bounds
+        activityIndicator.frame =  CGRect(x: (view.frame.size.width - 70)/2, y: (view.frame.size.height - 70)/2, width: 70, height: 70)
+    }
+    
+
+    func fetchEmployeeData() {
         self.activityIndicator.startAnimating()
-        viewModel.fetchEmployeeData(url: "https://s3.amazonaws.com/sq-mobile-interview/employees_empty.json")
-        
-        //reload tableview whenever new employee data is fetched
-        viewModel.reloadData = {[weak self] in
-            DispatchQueue.main.async {
-                self?.activityIndicator.stopAnimating()
-                self?.reloadandDisplayView()
+        NetworkService.shared.getEmployeeData(url: "https://s3.amazonaws.com/sq-mobile-interview/employees.json") {[weak self] result in
+            switch result {
+            case .failure(let error):
+                print(error.localizedDescription)
+            case .success(let employeeDataArray):
+                self?.viewModel = EmployeeViewModel.init(with: employeeDataArray)
             }
         }
-        // Do any additional setup after loading the view.
     }
     
-    override func loadView() {
-        super.loadView()
-        self.view.backgroundColor = .white
-        self.setUpTableView()
-    }
-    
-    
-    
-    //Do all settings related to table view here
-    func setUpTableView() {
-        self.view.addSubview(self.tableView)
-        refreshControlTV.addTarget(self, action: #selector(refreshData(_:)), for: .valueChanged)
-        refreshControlTV.attributedTitle = NSAttributedString(string: "Refreshing Data...")
-        self.tableView.refreshControl = refreshControlTV
-        
-        self.tableView.anchor(top: self.view.topAnchor , left: self.view.leftAnchor, bottom: self.view.bottomAnchor, right: self.view.rightAnchor, paddingTop: 0, paddingLeft: 0, paddingBottom: 0, paddingRight: 0, width: self.view.frame.size.width, height: self.view.frame.size.height, enableInsets: true)
-        
-        self.tableView.delegate = self
-        self.tableView.dataSource = self
-        self.tableView.register(EmployeeTableViewCell.self, forCellReuseIdentifier: reuseIdentifierCell)
-        
-    }
-    
+
     
     //MARK: - Refresh Data
     @objc private func refreshData(_ sender:Any) {
-        viewModel.fetchEmployeeData(url: "https://s3.amazonaws.com/sq-mobile-interview/employees.json")
+        self.fetchEmployeeData()
     }
     
-    func reloadandDisplayView() {
-        self.tableView.refreshControl?.endRefreshing()
-        self.tableView.reloadData()
-    }
+    
 }
 
 // MARK: - TABLEVIEW DATASOURCE & DELEGATE
@@ -90,32 +98,39 @@ extension ViewController:UITableViewDelegate,UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // print(self.viewModel.getEmployees()?.count)
-        if(self.viewModel.getEmployees()?.count == 0) {
-            //show view
-            tableView.setEmptyView(title: "No Employees in the directory")
-            
-        } else {
-            tableView.restore()
-        }
-        self.viewModel.sortEmployeesByTeam()
-        return self.viewModel.getEmployees()?.count ?? 0
+        
+        self.viewModel?.sortEmployeesByName()
+        
+        guard let employeeDataArray = self.viewModel?.getEmployees(),
+              employeeDataArray.count > 0 else {
+                  tableView.setEmptyView(title: "No Employees in the directory")
+                  return 0
+              }
+        
+        tableView.restore()
+        return employeeDataArray.count
     }
     
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifierCell, for: indexPath) as! EmployeeTableViewCell
-        cell.employeeTVCellVM = self.viewModel.getEmployeeData(at: indexPath)
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: EmployeeTableViewCell.identifier, for: indexPath) as? EmployeeTableViewCell else {
+            return UITableViewCell()
+        }
+        cell.employeeTVCellVM = self.viewModel?.getEmployeeData(at: indexPath)
         return cell
     }
     
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
+
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 120
     }
     
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 100
+    //move navigation bar as scrolls to top of tableView
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let defaultOffSet = self.view.safeAreaInsets.top
+        let offset = scrollView.contentOffset.y + defaultOffSet
+        
+        navigationController?.navigationBar.transform = CGAffineTransform.init(translationX: 0, y: min(0, -offset))
     }
 }
 
